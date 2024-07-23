@@ -1,32 +1,38 @@
 import datetime
 import time
 from functools import wraps
-from typing import List, Dict
+from typing import Literal, Annotated
 
+import numpy as np
 import pandas as pd
 import yfinance
-from pandas import DatetimeIndex, DataFrame
-from sqlalchemy import select, Integer, Float, BIGINT, func, DateTime, TIMESTAMP
-from sqlalchemy.exc import SQLAlchemyError
+from bingX import BingX
+from fastapi import Depends
+from fastapi.routing import APIRouter
+from pandas import DatetimeIndex
+from sqlalchemy import select, Float, BIGINT, func, Subquery, ScalarSelect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy_utils import Timestamp
 
 import models
-from utils import basic_utils
-from utils.bingxextra import get_full_order
-import numpy as np
-from bingX import BingX
-from bingX.perpetual.v2.types import ProfitLossFundFlow, HistoryOrder, ForceOrder
-from fastapi.routing import APIRouter
 import utils.mathutils as mathutils
 from routes.auth import user_dep
 from schemas.analysis_schema import *
+from utils import basic_utils
 from utils.basic_utils import db_dep
+from utils.bingxextra import get_full_order
 
 router = APIRouter(
     prefix="/analysis"
 )
+
+
+async def user_apis(user: user_dep, db: db_dep):
+    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+    print(type(apis_stmt))
+    return apis_stmt
+
+apis_dep = Annotated[ScalarSelect, Depends(user_apis)]
 
 
 async def get_orders_by_user(guid: str, db: AsyncSession) -> List:
@@ -159,8 +165,8 @@ async def calculate_var(user: user_dep, db: db_dep, trust: float):
 
 @router.get("/avg_profit_loss", response_model=AvgProfitModel)
 @refresh_data_bingx
-async def mean_profit_or_loss(user: user_dep, db: db_dep):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def mean_profit_or_loss(user: user_dep, db: db_dep,  apis_stmt: apis_dep):
+
 
     stmt = select(
         func.avg(
@@ -226,8 +232,7 @@ async def volatility(user: user_dep, db: db_dep):
 
 @router.get("/deals", response_model=List[DealsModel])
 @refresh_data_bingx
-async def get_deals(user: user_dep, db: db_dep, endTime: int = None, startTime: int = 0, symbol: str = ""):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def get_deals(user: user_dep, db: db_dep,apis_stmt: apis_dep, endTime: int = None, startTime: int = 0, symbol: str = "", ):
 
     # Получение сделок с использованием API BingX
     if not endTime:
@@ -260,9 +265,8 @@ async def get_positions(user: user_dep, db: db_dep):
 
 @router.get("/winrate", response_model=WinrateModel)
 @refresh_data_bingx
-async def get_winrate(user: user_dep, db: db_dep):
+async def get_winrate(user: user_dep, db: db_dep,  apis_stmt: apis_dep):
     # bingx_client = BingX(user.api_key, user.secret_key)
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
     try:
         stmt = select(models.UsersOrders.order_json).filter(models.UsersOrders.api_id.in_(apis_stmt),
                                                             models.UsersOrders.order_json["profit"].as_string().cast(
@@ -283,7 +287,7 @@ async def get_winrate(user: user_dep, db: db_dep):
 
 @router.get("/profit_plot", response_model=Dict[datetime.datetime, float])
 @refresh_data_bingx
-async def get_profit_by_period(user: user_dep, db: db_dep, days_offset: int = 365, frequency: str = "auto"):
+async def get_profit_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, days_offset: int = 365, frequency: str = "auto"):
     start_time = int(
         (datetime.datetime.now() - datetime.timedelta(days=days_offset)).timestamp() * 1000
     )
@@ -300,7 +304,6 @@ async def get_profit_by_period(user: user_dep, db: db_dep, days_offset: int = 36
                                  and
                                  (datetime.datetime.now() -datetime.timedelta(days=days_offset)).timestamp()*1000<=float(x["time"]), profits))
         )"""
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
     stmt = select(
         models.UsersOrders.order_json["profit"].as_string().cast(Float),
         models.UsersOrders.order_json["time"].as_string().cast(BIGINT),
@@ -372,10 +375,8 @@ async def get_weights_categories(user: user_dep, db: db_dep):
 
 @router.get("/change_by_period")
 @refresh_data_bingx
-async def get_change_by_period(user: user_dep, db: db_dep, endTime: int = int(time.time() * 1000), startTime: int = 0):
+async def get_change_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, endTime: int = int(time.time() * 1000), startTime: int = 0):
     print(startTime, endTime)
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
-
     stmt = select(
         func.sum(
             models.UsersOrders.order_json["profit"].as_string().cast(Float)
@@ -392,8 +393,7 @@ async def get_change_by_period(user: user_dep, db: db_dep, endTime: int = int(ti
 
 
 @router.get("/profit_factor")
-async def profit_factor(user: user_dep, db: db_dep):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def profit_factor(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     stmt = select(
 
         models.UsersOrders.order_json["profit"].as_string().cast(Float),
@@ -431,8 +431,7 @@ async def profit_factor(user: user_dep, db: db_dep):
 
 
 @router.get("/deals_count")
-async def deals_count(user: user_dep, db: db_dep):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def deals_count(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     stmt = select(
         models.UsersOrders.id,
         models.UsersOrders.order_json["time"].as_string().cast(BIGINT),
@@ -451,8 +450,8 @@ async def deals_count(user: user_dep, db: db_dep):
 
 
 @router.get("/avg_deal_profit")
-async def average_deal_profit(user: user_dep, db: db_dep):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def average_deal_profit(user: user_dep, db: db_dep, apis_stmt: apis_dep):
+
     stmt = select(
 
         models.UsersOrders.order_json["profit"].as_string().cast(Float),
@@ -471,8 +470,7 @@ async def average_deal_profit(user: user_dep, db: db_dep):
 
 @router.get('/std_mean_loss')
 @refresh_data_bingx
-async def std_mean_loss(user: user_dep, db: db_dep):
-    apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
+async def std_mean_loss(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     stmt2 = select(
         models.UsersOrders.order_json["profit"].as_string().cast(Float),
         models.UsersOrders.order_json["time"].as_string().cast(BIGINT)
@@ -490,3 +488,41 @@ async def std_mean_loss(user: user_dep, db: db_dep):
     std_mean = (std / resampled).abs().dropna(how=None)
     print(std_mean)
     return std_mean * 100
+
+
+@router.get("/report")
+async def get_report(user: user_dep, db: db_dep, apis_stmt: apis_dep, day_offset: Literal['7', '30', '365', '1']):
+    stmt = select(models.UserApiKeys).filter(models.UserApiKeys.user_id == user.guid,
+                                             models.UserApiKeys.key_type == "bingx")
+
+    res = await db.execute(stmt)
+    api = res.first()[0]
+    date_start = int((datetime.datetime.now()-datetime.timedelta(days=int(day_offset))).timestamp()*1000)
+    stmt_pr = select(
+        func.sum(models.UsersOrders.order_json["profit"].as_string().cast(Float)),
+
+    ).filter(
+        models.UsersOrders.api_id.in_(apis_stmt),
+        models.UsersOrders.order_json["profit"].as_string().cast(Float) != 0,
+    models.UsersOrders.order_json["time"].as_string().cast(BIGINT)<date_start)
+
+    res_pr = await db.scalar(stmt_pr)
+    print(res_pr)
+
+    stmt_now = select(
+        func.sum(models.UsersOrders.order_json["profit"].as_string().cast(Float)),
+
+    ).filter(
+        models.UsersOrders.api_id.in_(apis_stmt),
+        models.UsersOrders.order_json["profit"].as_string().cast(Float) != 0,
+    models.UsersOrders.order_json["time"].as_string().cast(BIGINT)>=date_start)
+
+    res_now = await db.scalar(stmt_now)
+    print(res_now)
+    bingx_client = BingX(api.api_key, api.secret_key)
+
+    portfolio = bingx_client.perpetual_v2.account.get_swap_positions()
+    portfolio_map = list(
+        map(lambda x: {"symbol": x["symbol"][:len(x["symbol"]) - 1], "amount": float(x["availableAmt"])}, portfolio))
+
+    return basic_utils.generate_report(res_now, res_pr, portfolio_map)

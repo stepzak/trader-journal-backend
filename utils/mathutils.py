@@ -66,12 +66,15 @@ def calculate_var(symbols: List, confidence_level):
 
 
 def sharpe_ratio(return_series, N, rf):
-    m = np.mean(return_series) * N - rf
+    try:
+        m = np.mean(return_series) * N - rf
 
 
-    s = np.std(return_series) * np.sqrt(N)
+        s = np.std(return_series) * np.sqrt(N)
 
-    return m / s
+        return m / s
+    except:
+        return 0
 
 
 def calculate_vol(symbols):
