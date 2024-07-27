@@ -1,7 +1,9 @@
 import datetime
+import os
 from typing import Annotated, List, Dict
 from coinmarketcapapi import CoinMarketCapAPI
 import yfinance
+from dotenv import load_dotenv
 from pandas import DataFrame
 from pandas_datareader import data as pdr
 import binance as b_client
@@ -12,9 +14,10 @@ from bingX import BingX
 from bingX.perpetual.v2.types import HistoryOrder, ProfitLossFundFlow
 import yfinance as yf
 
-bingx_client = BingX(api_key="xN6UqmsKgVOvjn2wWHxgWesA75rvkenSgxMhFvVG9Xy67NcIUuO3Hsydob40ZKstuKmkT58sIdwKoKBznvw", secret_key="agHtcfckQdwBUJHWB6OlFF9Q2JHxQDjMydtYTkZT4mUNoCrc78LR71ms47jsbhrOdh6Z0Kpr7UVvoXFh3Q")
+#bingx_client = BingX(api_key="xN6UqmsKgVOvjn2wWHxgWesA75rvkenSgxMhFvVG9Xy67NcIUuO3Hsydob40ZKstuKmkT58sIdwKoKBznvw", secret_key="agHtcfckQdwBUJHWB6OlFF9Q2JHxQDjMydtYTkZT4mUNoCrc78LR71ms47jsbhrOdh6Z0Kpr7UVvoXFh3Q")
 
-cmc= CoinMarketCapAPI("df54f7e7-f5a8-4e78-ab24-08fd9ffbfc7f")
+load_dotenv()
+cmc = CoinMarketCapAPI(os.getenv("CMC_KEY"))
 
 #print(pdr.get_data_yahoo(["BTC-USD", "ETH-USD"], start="2018-01-01", end=datetime.datetime.today()).tail())
 #dict: {symbol, price}

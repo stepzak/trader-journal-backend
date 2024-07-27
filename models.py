@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import Integer, Column, String, JSON, func, DateTime, ForeignKey, text, select, BIGINT, Boolean
+from sqlalchemy import Integer, Column, String, JSON, func, DateTime, ForeignKey, text, select, BIGINT, Boolean, Float
 from sqlalchemy.orm import relationship, selectinload
 from database import engine, Base, get_session
 #from sqlalchemy_views import CreateView, DropView
@@ -20,6 +20,7 @@ class Users(Base):
     api_keys = relationship("UserApiKeys")
     #orders = relationship("UsersOrders", cascade="all,delete")
     boards = relationship("UserBoards", lazy="selectin", cascade="all,delete")
+    strategies_backtest = relationship("BackTests", cascade="all,delete")
 
 class Test(Base):
     __tablename__ = "test"
@@ -83,6 +84,7 @@ class UserBoards(Base):
     name = Column(String(100))
     widgets = relationship("BoardsWidgets", lazy="selectin", cascade="all,delete")
 
+
 class BoardsWidgets(Base):
     __tablename__ = "boards_widgets"
     i = Column(Integer, primary_key=True, autoincrement=True)
@@ -97,6 +99,29 @@ class BoardsWidgets(Base):
     minH = Column(Integer)
     maxW = Column(Integer)
     maxH = Column(Integer)
+
+
+class BackTests(Base):
+    __tablename__ = "backtests"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    strategyName = Column(String(100))
+    guid = Column(String(100), unique=True)
+    userId = Column(String(100), ForeignKey(Users.guid))
+    start = Column(DateTime)
+    end = Column(DateTime)
+    equityFinal = Column(Float)
+    equityPeak = Column(Float)
+    return_ = Column(Float)
+    volatility = Column(Float)
+    sharpe = Column(Float)
+    sortino = Column(Float)
+    calmar = Column(Float)
+    maxDrowdown = Column(Float)
+    avgDrowdown = Column(Float)
+    winrate = Column(Float)
+    bestTrade = Column(Float)
+    worstTrade = Column(Float)
+    plotPath = Column(String(2048), unique=True)
 
 
 async def create_tables():
