@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 import models
 from database import get_session, SessionLocal
-from routes import auth, messages, analysis, widgets, backtesting
+from routes import auth, messages, analysis, widgets, backtesting, reports
 from fastapi_socketio import SocketManager
 import socketio
 from fastapi.templating import Jinja2Templates
@@ -30,6 +30,7 @@ fast_app.include_router(messages.router)
 fast_app.include_router(analysis.router)
 fast_app.include_router(widgets.router)
 fast_app.include_router(backtesting.router)
+fast_app.include_router(reports.router)
 
 
 @fast_app.get("/")

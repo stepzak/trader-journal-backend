@@ -24,44 +24,47 @@ router = APIRouter(
 load_dotenv()
 cmc = CoinMarketCapAPI(os.getenv("CMC_KEY"))
 
-positions = tuple(map(lambda x: x["symbol"]+"-USD", cmc.cryptocurrency_listings_latest().data))
+positions = tuple(map(lambda x: x["symbol"] + "-USD", cmc.cryptocurrency_listings_latest().data))
 
 
 @router.post("/backtest", response_model=BackTestPostResponse)
 async def backtest(user: user_dep, db: db_dep, backtest: BackTestPostDto):
-    data = yfinance.download(backtest.position, start = backtest.startDate, end = backtest.endDate, interval = backtest.timeframe)
+    data = yfinance.download(backtest.position, start=backtest.startDate, end=backtest.endDate,
+                             interval=backtest.timeframe)
+
+    print(backtest.model_dump())
     b_d = backtest.model_dump().copy()
     del b_d["startDate"]
     del b_d["endDate"]
     del b_d["position"]
     del b_d["timeframe"]
-    #b_d["data"]=data
+    # b_d["data"]=data
     print(data)
     bt = bt_utils.test_run(data=data, **b_d)
     stats = bt.run()
     guid = str(uuid.uuid4())
-    filepath = os.path.join(cfg.ROOT_DIR, "backtesting_plots", str(backtest.strategyName+guid))
+    filepath = os.path.join(cfg.ROOT_DIR, "backtesting_plots", str(backtest.strategyName + guid))
     bt.plot(open_browser=False, filename=filepath)
     print(stats)
     new_strategy = models.BackTests(
-        strategyName = backtest.strategyName,
-        guid = guid,
-        userId = user.guid,
-        start = stats.iloc[0],
-        end = stats.iloc[1],
-        equityFinal = stats.iloc[4],
-        equityPeak = stats.iloc[5],
-        return_ = stats.iloc[6],
-        volatility = stats.iloc[8],
-        sharpe = stats.iloc[9],
-        sortino = stats.iloc[10],
-        calmar = stats.iloc[11],
-        maxDrowdown = stats.iloc[13],
-        avgDrowdown = stats.iloc[14],
-        winrate = stats.iloc[18],
-        bestTrade = stats.iloc[19],
-        worstTrade = stats.iloc[20],
-        plotPath = filepath
+        strategyName=backtest.strategyName,
+        guid=guid,
+        userId=user.guid,
+        start=stats.iloc[0],
+        end=stats.iloc[1],
+        equityFinal=stats.iloc[4],
+        equityPeak=stats.iloc[5],
+        return_=stats.iloc[6],
+        volatility=stats.iloc[8],
+        sharpe=stats.iloc[9],
+        sortino=stats.iloc[10],
+        calmar=stats.iloc[11],
+        maxDrowdown=stats.iloc[13],
+        avgDrowdown=stats.iloc[14],
+        winrate=stats.iloc[18],
+        bestTrade=stats.iloc[19],
+        worstTrade=stats.iloc[20],
+        plotPath=filepath
     )
 
     db.add(new_strategy)
@@ -70,15 +73,16 @@ async def backtest(user: user_dep, db: db_dep, backtest: BackTestPostDto):
     try:
         return new_strategy
     except:
-        raise HTTPException(status_code=400, detail="При тестировании стратегии произошла ошибка. Проверьте, чтобы начальная сумма была не меньше средней стоимости актива")
+        raise HTTPException(status_code=400,
+                            detail="При тестировании стратегии произошла ошибка. Проверьте, чтобы начальная сумма была не меньше средней стоимости актива")
 
 
 @router.get("/get_plot_file_base64")
 async def get_plot_file_by_id(guid: str, db: db_dep):
     filepath = await db.scalar(select(models.BackTests.plotPath).filter(models.BackTests.guid == guid))
-    with open(filepath+".html", "rb") as f:
+    with open(filepath + ".html", "rb") as f:
         b64string = base64.b64encode(f.read())
-    return b64string.decode("utf-8")
+    return {"base64": b64string.decode("utf-8"), "filename": filepath.split("/")[-1]+".html"}
 
 
 @router.get("/available_positions_list", response_model=List[str])

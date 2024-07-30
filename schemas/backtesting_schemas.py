@@ -12,11 +12,25 @@ cmc = CoinMarketCapAPI(os.getenv("CMC_KEY"))
 
 positions = tuple(map(lambda x: x["symbol"]+"-USD", cmc.cryptocurrency_listings_latest().data))
 
+
+class ExpressionModel(BaseModel):
+    tie_to: str
+    expression: str
+    value: float | None = None
+
+
+class LogicalModel(BaseModel):
+    signal: float
+    signal_false: float = 0
+    expressions: List["ExpressionModel"]
+
+
 class BacktestIndicator(BaseModel):
     indicator: str
-    kwargs: Dict
-    positive_signal: float = 1
-    negative_signal: float = -1
+    kwargs: Dict[str, float]
+    positive_signal: float
+    negative_signal: float
+    # logical: List[LogicalModel]
 
 
 class BackTestPostDto(BaseModel):

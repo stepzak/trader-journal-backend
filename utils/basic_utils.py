@@ -39,64 +39,54 @@ def generate_report(profit, previous_profit, positions):
     #profit = calculate_total_profit(data)
 
     #previous_profit = get_previous_period_profit(data)
-
+    var = sharpe_ratio = alpha = beta = 0
     introduction = generate_introduction(profit, previous_profit)
+    print(positions)
+    if len(positions)>0:
+        tickers = [i["symbol"] for i in positions]
+        data = yfinance.download(tickers, start=datetime.datetime.now() - datetime.timedelta(days=365 * 5))["Adj Close"]
+        print(data)
+        last_prices = data.iloc[-1]
+        returns = data.pct_change()
+        ret_mean = returns.mean()
 
-    tickers = [i["symbol"] for i in positions]
-    data = yfinance.download(tickers, start=datetime.datetime.now() - datetime.timedelta(days=365 * 5))["Adj Close"]
-    print(data)
-    last_prices = data.iloc[-1]
-    returns = data.pct_change()
-    ret_mean = returns.mean()
+        if len(tickers) > 1:
+            total = sum(
+                list(map(lambda x: float(x["availableAmt"]) * last_prices[x["symbol"][:len(x["symbol"]) - 1]],
+                         positions)))
+            amts = dict(
+                (i["symbol"][:len(i["symbol"]) - 1], i["availableAmt"]) for i in positions
+            )
+            weights = {i: float(last_prices[i]) * float(amts[i]) / total
+                       for i in tickers}
 
-    if len(tickers) > 1:
-        total = sum(
-            list(map(lambda x: float(x["availableAmt"]) * last_prices[x["symbol"][:len(x["symbol"]) - 1]],
-                     positions)))
-        amts = dict(
-            (i["symbol"][:len(i["symbol"]) - 1], i["availableAmt"]) for i in positions
-        )
-        weights = {i: float(last_prices[i]) * float(amts[i]) / total
-                   for i in tickers}
-
-        rets = [ret_mean[k] * weights[k] for k in tickers]
-
-
-    else:
-
-        rets = np.array(returns.dropna().to_list())
+            rets = [ret_mean[k] * weights[k] for k in tickers]
 
 
-    sharpe_ratio = mathutils.sharpe_ratio(rets, 252, 0.01)
+        else:
+
+            rets = np.array(returns.dropna().to_list())
+        var = mathutils.calculate_var(positions, 0.95)
+
+        sharpe_ratio = mathutils.sharpe_ratio(rets, 252, 0.01)
 
     #max_drawdown = calculate_max_drawdown(data)
 
-    var = mathutils.calculate_var(positions, 0.95)
 
-    alpha, beta = mathutils.alpha_and_beta(positions)
+
+        alpha, beta = mathutils.alpha_and_beta(positions)
 
     recommendations = generate_recommendations(sharpe_ratio, var, alpha, beta)
 
     report = {
 
-        "Introduction": introduction,
-
-        "Performance Analysis": {
-
-            "Total Profit": profit,
-
-            "Sharpe Ratio": sharpe_ratio,
-
-
-            "VAR": var,
-
-            "Alpha": alpha,
-
-            "Beta": beta,
-
-        },
-
-        "Recommendations and Conclusions": recommendations
+        "intro": introduction,
+        "profit": profit,
+        "sharpe": sharpe_ratio,
+        "var": var,
+        "alpha": alpha,
+        "beta": beta,
+        "conclusion": recommendations
 
     }
 

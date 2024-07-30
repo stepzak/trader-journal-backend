@@ -21,6 +21,7 @@ class Users(Base):
     #orders = relationship("UsersOrders", cascade="all,delete")
     boards = relationship("UserBoards", lazy="selectin", cascade="all,delete")
     strategies_backtest = relationship("BackTests", cascade="all,delete")
+    reports = relationship("UserReports", cascade="all,delete", lazy="selectin")
 
 class Test(Base):
     __tablename__ = "test"
@@ -68,6 +69,7 @@ class UserApiKeys(Base):
     secret_key = Column(String(100), unique=True)
     key_type = Column(String(100))
     orders = relationship("UsersOrders")
+
 
 class UsersOrders(Base):
     __tablename__ = "users_orders"
@@ -122,6 +124,22 @@ class BackTests(Base):
     bestTrade = Column(Float)
     worstTrade = Column(Float)
     plotPath = Column(String(2048), unique=True)
+
+
+class UserReports(Base):
+    __tablename__ = "user_reports"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(100), ForeignKey(Users.guid))
+    intro = Column(String(1024))
+    alpha = Column(Float)
+    beta = Column(Float)
+    profit = Column(Float)
+    var = Column(Float)
+    sharpe = Column(Float)
+    day_period = Column(Integer)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    conclusion = Column(String(1024))
 
 
 async def create_tables():
