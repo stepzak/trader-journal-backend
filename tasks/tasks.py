@@ -1,7 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 from email.mime.text import MIMEText
-
+from dotenv import load_dotenv
 from celery import Celery
 
 cel = Celery("tasks", broker="redis://localhost:6379")
@@ -14,10 +14,10 @@ def send_email(uid, mail: str):
     msg["From"] = 'Служба поддержки'
     msg["Subject"] = "Восстановление пароля"
     msg.set_content("Код для восстановления пароля: " + uid)
-    s = smtplib.SMTP('smtp.gmail.com', 587)
+    s = smtplib.SMTP(os.getenv("SMTP_SERVER")), int(os.getenv("SMTP_PORT")))
     s.starttls()
     s.ehlo()
-    s.login('newbinancetest@gmail.com', "pyznbdytqydrjkfe")
-    s.sendmail('newbinancetest@gmail.com',[mail], msg.as_string())
+    s.login(os.getenv("SMTP_LOGIN"), os.getenv("SMTP_PASSWORD"))
+    s.sendmail((os.getenv("SMTP_LOGIN"),[mail], msg.as_string())
     s.quit()
     return {"status": "success"}
