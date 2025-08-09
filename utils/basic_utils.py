@@ -41,11 +41,11 @@ def generate_report(profit, previous_profit, positions):
     #previous_profit = get_previous_period_profit(data)
     var = sharpe_ratio = alpha = beta = 0
     introduction = generate_introduction(profit, previous_profit)
-    print(positions)
+    
     if len(positions)>0:
         tickers = [i["symbol"] for i in positions]
         data = yfinance.download(tickers, start=datetime.datetime.now() - datetime.timedelta(days=365 * 5))["Adj Close"]
-        print(data)
+        
         last_prices = data.iloc[-1]
         returns = data.pct_change()
         ret_mean = returns.mean()
