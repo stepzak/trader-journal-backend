@@ -33,7 +33,7 @@ async def get_boards(user: user_dep, db: db_dep):
     res = await db.execute(stmt)
 
     boards = res.all()
-    print(boards)
+    
     if not boards or len(boards)==0:
         new_board = models.UserBoards(user_id = user.guid, widgets = [], name = "Дашборд по умолчанию")
         db.add(new_board)
@@ -103,17 +103,17 @@ async def update_board(user: user_dep, db: db_dep, board_id: int, board: PostBoa
 
         #x = x.model_dump()
         x["board_id"]=board_id
-        print(x)
+        
         widget = UpdateWidgetsModel.model_validate(x).model_dump()
 
         widgets.append(models.BoardsWidgets(**widget))
     #widgets = [models.BoardsWidgets(x.model_dump()) for x in board.widgets]
-        print(x, widgets)
+        
     db.add_all(widgets)
     await db.commit()
     for i in widgets:
         await db.refresh(i)
     await db.commit()
     await db.refresh(b)
-    print(b.widgets)
+    
     return GetBoardModel.model_validate(b, from_attributes=True).model_dump()
