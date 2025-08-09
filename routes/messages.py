@@ -17,6 +17,5 @@ async def get_messages(db: db_dep):
 
     msgs = res.all()
     msgs = [MessageModel.model_validate(i[0], from_attributes=True).__dict__ for i in msgs]
-    print(msgs)
     return msgs
 
