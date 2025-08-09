@@ -70,11 +70,11 @@ def test_run(data, strategyName, indicators: List[Dict] = [{}], tp=0.03, sl=0.02
         def init(self):
             for strat in indicators:
                 if strat["indicator"] == "rsi":
-                    print(strat.get("kwargs", {}).get("period", 14))
+                    
                     self.rsi = self.I(ta.RSI, self.data.Close, int(strat.get("kwargs", {}).get("period", 14)))
                 elif strat["indicator"] == "sma":
-                    #print(strat.get("kwargs", {}).get("ma1_period", 10))
-                    #print(strat.get("kwargs", {}).get("ma2_period", 20))
+                    #
+                    #
                     self.ma1 = self.I(SMA, self.data.Close, strat.get("kwargs", {}).get("ma1_period", 10))
                     self.ma2 = self.I(SMA, self.data.Close, strat.get("kwargs", {}).get("ma2_period", 20))
                 elif strat["indicator"] == "macd":
@@ -83,7 +83,7 @@ def test_run(data, strategyName, indicators: List[Dict] = [{}], tp=0.03, sl=0.02
                 elif strat["indicator"] == "aroon":
                     self.aroon = self.I(ta.AROON, self.data.Low, self.data.High)
                 elif strat["indicator"] == "cdl3blackcrows":
-                    print(self.data.Close.__array__())
+                    
                     self.cdl3blackcrows = self.I(ta.CDL3BLACKCROWS, self.data.Open, self.data.High, self.data.Close, self.data.Low,)
 
 
@@ -117,7 +117,7 @@ def test_run(data, strategyName, indicators: List[Dict] = [{}], tp=0.03, sl=0.02
             return 0
 
         def check_aroon(self, arg, price, kwargs, positive_signal, negative_signal):
-            # print(self.aroon[-1][-1])
+            # 
             if 100 <= self.aroon[-1][-1]:
                 return positive_signal
             elif -100 >= self.aroon[-1][-1]:
@@ -260,7 +260,7 @@ def test_run(data, strategyName, indicators: List[Dict] = [{}], tp=0.03, sl=0.02
     return bt
 
 
-# print(yfinance.download("XRP-USD"))
+# 
 if __name__ == "__main__":
     params = [
         {"indicator": "sma", "kwargs": {"ma1_period": 10, "ma2_period": 20}, "positive_signal": 2,
@@ -268,5 +268,5 @@ if __name__ == "__main__":
     ]
     run = test_run(GOOG,
                    buy_size=0.3, sell_size = 0.3,scalping=False, indicators=params, strategyName=str(uuid.uuid4()), cash=10000)
-    print(run.run())
-    print(run.plot(open_browser=False, filename="backtest_plots/" + str(uuid.uuid4())))
+    
+    
