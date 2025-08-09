@@ -19,18 +19,17 @@ import yfinance as yf
 load_dotenv()
 cmc = CoinMarketCapAPI(os.getenv("CMC_KEY"))
 
-#print(pdr.get_data_yahoo(["BTC-USD", "ETH-USD"], start="2018-01-01", end=datetime.datetime.today()).tail())
+# 
 #dict: {symbol, price}
 
 def calculate_var(symbols: List, confidence_level):
-    print(symbols)
+     
     tickers = [i["symbol"] for i in symbols]
 
 
     data = yf.download(tickers, start=datetime.date.today() - datetime.timedelta(days=365*5), end=datetime.date.today())["Close"]
     d_prices = data.to_dict()
     if len(tickers)>1:
-        print(d_prices)
         try:
             for k in d_prices.keys():
                 obj = list(filter(lambda x: x["symbol"]==k, symbols))[0]
@@ -47,10 +46,8 @@ def calculate_var(symbols: List, confidence_level):
         weights = np.array(
             [float(i["price"]) * float(i["amount"]) / total for i in symbols]
         )
-        print(weights)
         cov_matrix = returns.cov()
         avg_returns = returns.mean()
-        print(avg_returns)
         dot = avg_returns.dot(weights)
         port_stdev = np.sqrt(weights.T.dot(cov_matrix).dot(weights))
         mean_investment = (1 + dot) * total
@@ -81,7 +78,7 @@ def sharpe_ratio(return_series, N, rf):
 
 
 def calculate_vol(symbols):
-    print(symbols)
+     
 
     tickers = [i["symbol"] for i in symbols]
 
@@ -107,7 +104,7 @@ def calculate_vol(symbols):
     else:
         returns = data.pct_change()
         vol = returns.rolling(3).std()*np.sqrt(3)
-        print(vol)
+         
         return np.mean(vol.dropna().to_list())
 
 def calculate_weights(s: dict):
@@ -205,20 +202,20 @@ def get_categories_weight(symbols: List):
 
     if len(tickers)>1:
         tick_category = []
-        print(data)
+         
         for i in tickers:
             ticker = cmc.cryptocurrency_info(symbol=i).data
             tick_category.append({"weights": float(data[i+"-USD"])*float(list(filter(lambda x: x["symbol"]==i+"-USD", symbols))[0]["amount"]), "category": ticker[i][0]["category"]})
 
-        print(tick_category)
+         
         df = DataFrame(tick_category)
         a = df.groupby("category").sum()
-        print(a)
+         
         return a.to_dict()
     else:
         ticker = cmc.cryptocurrency_info(symbol=tickers[0]).data
         a =  yf.Ticker(ticks[0]).history()["Close"]
-        print(a)
+         
         return {"weights": {
             ticker[tickers[0]][0]["category"]: a.iloc[-1]*symbols[0]["amount"]
         }}
@@ -226,8 +223,8 @@ def get_categories_weight(symbols: List):
 #playground
 if __name__ == "__main__":
     now = datetime.datetime.now().timestamp()
-   # print(alpha_and_beta([{"symbol": "ETH-USD", "amount": 15}]))
+   #  
 
-    print(get_categories_weight(
+     
         [{"symbol": "MAV-USD"}]
     ))
