@@ -35,7 +35,7 @@ async def get_report(user: user_dep, db: db_dep, apis_stmt: apis_dep, day_offset
     models.UsersOrders.order_json["time"].as_string().cast(BIGINT)<date_start)
 
     res_pr = await db.scalar(stmt_pr)
-    print(res_pr)
+    
     if not res_pr:
         raise HTTPException(status_code=400, detail="Сделки не найдены")
     stmt_now = select(
@@ -47,7 +47,7 @@ async def get_report(user: user_dep, db: db_dep, apis_stmt: apis_dep, day_offset
     models.UsersOrders.order_json["time"].as_string().cast(BIGINT)>=date_start)
 
     res_now = await db.scalar(stmt_now)
-    print(res_now)
+    
     bingx_client = BingX(api.api_key, api.secret_key)
 
     portfolio = bingx_client.perpetual_v2.account.get_swap_positions()
