@@ -29,7 +29,7 @@ router = APIRouter(
 
 async def user_apis(user: user_dep, db: db_dep):
     apis_stmt = select(models.UserApiKeys.id).filter(models.UserApiKeys.user_id == user.guid).scalar_subquery()
-    print(type(apis_stmt))
+     
     return apis_stmt
 
 apis_dep = Annotated[ScalarSelect, Depends(user_apis)]
@@ -59,7 +59,7 @@ def refresh_data_bingx(fn):
 
         orders = list(filter(lambda x: x["type"] == "bingx", orders))
         orders = list(map(lambda y: y["orders"], orders))[0]
-        print(orders)
+         
         if not orders:
             start_time = int((datetime.datetime.now() - datetime.timedelta(days=90)).timestamp()) * 1000
 
@@ -73,9 +73,9 @@ def refresh_data_bingx(fn):
             api_key = await db.execute(stmt)
             api_key = api_key.first()[0]
             a = await get_full_order(api_key.api_key, api_key.secret_key, int(time.time() * 1000), start_time, 1000, "")
-            print(a)
+             
             insts = []
-            # print(a["data"]["orders"])
+            #  
             ords_ids = list(map(lambda x: x.order_id.split("_")[0], orders))
             # ords_ids.extend(list(map(lambda x: x["orderId"], a["data"]["orders"])))
             for order in a["data"]["orders"]:
@@ -86,14 +86,14 @@ def refresh_data_bingx(fn):
                         ords_ids.append(str(order["orderId"]))
                 except Exception as ex:
                     await db.rollback()
-                    print(ex)
+                     
                     continue
 
             db.add_all(insts)
             await db.commit()
             await db.refresh(user)
         except Exception as ex:
-            print(ex)
+             
         kwargs["user"] = user
 
         return await fn(*args, **kwargs)
@@ -203,7 +203,7 @@ async def get_portfolio_positions_weights(user: user_dep, db: db_dep):
         amts = dict(
             (i["symbol"][:len(i["symbol"]) - 1], i["availableAmt"]) for i in portfolio
         )
-        print({i: float(data[i]) * float(amts[i]) for i in tickers})
+         
         try:
             return {i: float(data[i]) * float(amts[i]) for i in tickers}
         except:
@@ -280,7 +280,7 @@ async def get_winrate(user: user_dep, db: db_dep,  apis_stmt: apis_dep):
         plus = res2.all()
         winrate = len(plus) / len(alls)
     except ZeroDivisionError as ex:
-        print(ex)
+         
         winrate = 0
     return {"winrate": winrate}
 
@@ -294,7 +294,7 @@ async def get_profit_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, 
     """bingx_client = BingX(user.api_key, user.secret_key)
 
     profits = bingx_client.perpetual_v2.account.get_profit_loss_fund_flow(ProfitLossFundFlow(start_time=start_time, limit=1000, end_time=int(time.time())*1000))
-    print(profits)
+     
     arr = list(
             map(
                 lambda x: {
@@ -324,11 +324,11 @@ async def get_profit_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, 
     df.set_index(DatetimeIndex(df["timestamp"]), inplace=True, drop=True)
     freq = {365: "ME", 30: "W", 7: "D", 1: '1h'}
     f = freq.get(days_offset) if frequency == "auto" else frequency
-    print(f)
-    print(frequency)
+     
+     
     test = df.resample(f)["profit"].sum()
     test = test.dropna()
-    print(test.to_dict())
+     
     return test.to_dict()
 
 
@@ -345,8 +345,8 @@ async def alpha_beta(user: user_dep, db: db_dep):
     portfolio = bingx_client.perpetual_v2.account.get_swap_positions()
     portfolio_map = list(
         map(lambda x: {"symbol": x["symbol"][:len(x["symbol"]) - 1], "amount": float(x["availableAmt"])}, portfolio))
-    print("map")
-    print(portfolio_map)
+     
+     
     beta, alpha = mathutils.alpha_and_beta(portfolio_map)
 
     return {"alpha": alpha, "beta": beta}
@@ -366,7 +366,7 @@ async def get_weights_categories(user: user_dep, db: db_dep):
     portfolio_map = list(
         map(lambda x: {"symbol": x["symbol"][:len(x["symbol"]) - 1], "amount": float(x["availableAmt"])}, portfolio))
 
-    print(portfolio_map)
+     
     try:
         return mathutils.get_categories_weight(portfolio_map)
     except:
@@ -376,7 +376,7 @@ async def get_weights_categories(user: user_dep, db: db_dep):
 @router.get("/change_by_period")
 @refresh_data_bingx
 async def get_change_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, endTime: int = int(time.time() * 1000), startTime: int = 0):
-    print(startTime, endTime)
+     
     stmt = select(
         func.sum(
             models.UsersOrders.order_json["profit"].as_string().cast(Float)
@@ -388,7 +388,7 @@ async def get_change_by_period(user: user_dep, db: db_dep, apis_stmt: apis_dep, 
 
     res = await db.execute(stmt)
     change = res.scalar()
-    print(change)
+     
     return {"change": change}
 
 
@@ -414,8 +414,8 @@ async def profit_factor(user: user_dep, db: db_dep, apis_stmt: apis_dep):
 
     res = res.all()
     res2 = res2.all()
-    print(res)
-    print(res2)
+     
+     
 
     df_p = basic_utils.resample_stmt_res(res)
     df_n = basic_utils.resample_stmt_res(res2)
@@ -425,8 +425,8 @@ async def profit_factor(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     ret = (df_r_p / df_r_n).abs().dropna(how=0)
     ret.replace([np.inf, -np.inf], np.nan, inplace=True)
     ret = ret.dropna(how=None)
-    print(ret)
-    # print(df_n)
+     
+    #  
     return ret.to_dict()
 
 
@@ -443,9 +443,9 @@ async def deals_count(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     res = res.all()
 
     df_res = basic_utils.resample_stmt_res(res)
-    print(df_res)
+     
     count = df_res["profit"].count()
-    print(count)
+     
     return count.to_dict()
 
 
@@ -464,7 +464,7 @@ async def average_deal_profit(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     res = res.all()
     df = basic_utils.resample_stmt_res(res)
     resampled = df["profit"].mean().dropna()
-    print(resampled)
+     
     return resampled.to_dict()
 
 
@@ -486,5 +486,5 @@ async def std_mean_loss(user: user_dep, db: db_dep, apis_stmt: apis_dep):
     arr = list(map(lambda x: x[0], res))
     std = np.std(arr)
     std_mean = (std / resampled).abs().dropna(how=None)
-    print(std_mean)
+     
     return std_mean * 100
