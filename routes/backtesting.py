@@ -32,20 +32,20 @@ async def backtest(user: user_dep, db: db_dep, backtest: BackTestPostDto):
     data = yfinance.download(backtest.position, start=backtest.startDate, end=backtest.endDate,
                              interval=backtest.timeframe)
 
-    print(backtest.model_dump())
+    
     b_d = backtest.model_dump().copy()
     del b_d["startDate"]
     del b_d["endDate"]
     del b_d["position"]
     del b_d["timeframe"]
     # b_d["data"]=data
-    print(data)
+    
     bt = bt_utils.test_run(data=data, **b_d)
     stats = bt.run()
     guid = str(uuid.uuid4())
     filepath = os.path.join(cfg.ROOT_DIR, "backtesting_plots", str(backtest.strategyName + guid))
     bt.plot(open_browser=False, filename=filepath)
-    print(stats)
+    
     new_strategy = models.BackTests(
         strategyName=backtest.strategyName,
         guid=guid,
