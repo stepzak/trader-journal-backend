@@ -66,7 +66,7 @@ class AuthUtils:
     @staticmethod
     async def get_user_by_token(token: Annotated[oauth2_scheme, Depends()], db: db_dep):
         try:
-            print(token)
+            
             payload = jwt.decode(token, key=KEY, algorithms=["HS256"])
             guid = payload["guid"]
             stmt = select(models.Users).filter_by(guid=guid)
@@ -90,13 +90,13 @@ async def register(user: UserRegister, db: db_dep):
         models.Users.email==user.username)
     )
 
-    print(stmt)
+    
 
     user_dict["password"]=AuthUtils.encrypt_pass(user_dict["password"])
     user_dict["guid"]=str(uuid.uuid4())
     res = await db.execute(stmt)
     a=res.first()[0]
-    print(a)
+    
     if a>0:
         return {"status_code": 400, "message": "Данное имя пользователя или почта уже существуют"}
 
