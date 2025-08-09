@@ -20,7 +20,7 @@ def get_full_order(api_key, secret_key, endTime = None, startTime = 0, limit = 5
     "timestamp": int(time.time() * 10 ** 3),
         "symbol": symbol
 }
-    print(paramsMap)
+     
     paramsStr = parseParam(paramsMap)
     return send_request(method, path, paramsStr, payload, api_key, secret_key)
 
@@ -37,7 +37,7 @@ def get_full_order1(api_key, secret_key, end_time, start_time, limit, symbol):
             }
         paramsStr = parseParam(params)
         response = send_request("GET", '/openApi/swap/v1/trade/fullOrder', paramsStr, {}, api_key, secret_key)
-        print(response)
+         
         new_orders = response["data"]["orders"]
 
         orders.extend(new_orders)
@@ -46,10 +46,10 @@ def get_full_order1(api_key, secret_key, end_time, start_time, limit, symbol):
             break
 
         end_time = new_orders[-1]["time"] + 1  # Обновляем start_time для следующего запроса
-        print(end_time)
+         
 
         start_time = end_time - 1000*86400*7
-        print(start_time)
+         
 
     return {"data": {"orders": orders}}
 
@@ -69,10 +69,10 @@ async def fetch_orders(client, api_key, secret_key, start_time, end_time, limit,
         }
         response = await client.get(url, headers=headers)
         try:
-            print(response.json())
+             
             return response.json()
         except Exception as ex:
-            print(ex)
+             
 
 async def get_full_order(api_key, secret_key, end_time, start_time, limit, symbol):
     orders = []
@@ -95,7 +95,7 @@ async def get_full_order(api_key, secret_key, end_time, start_time, limit, symbo
 
 def get_sign(api_secret, payload):
     signature = hmac.new(api_secret.encode("utf-8"), payload.encode("utf-8"), digestmod=sha256).hexdigest()
-    #print("sign=" + signature)
+    # 
     return signature
 
 
